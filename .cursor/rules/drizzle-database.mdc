@@ -1,0 +1,208 @@
+---
+alwaysApply: true
+---
+
+# Drizzle ORM Database Rules
+
+This project uses **Drizzle ORM** for all database interactions. All database queries must follow these guidelines.
+
+## Core Principles
+
+1. **Always use Drizzle schema and queries** - Never use raw SQL queries directly
+2. **Import from the correct files**:
+   - Database schema: [src/db/schema.ts](mdc:src/db/schema.ts)
+   - Database instance: [src/db/index.ts](mdc:src/db/index.ts)
+
+## Database Setup
+
+- **Database Provider**: Neon PostgreSQL (serverless)
+- **Schema Location**: [src/db/schema.ts](mdc:src/db/schema.ts)
+- **Database Instance**: Exported as `db` from [src/db/index.ts](mdc:src/db/index.ts)
+- **Configuration**: [drizzle.config.ts](mdc:drizzle.config.ts)
+
+## Available Tables
+
+### Decks Table (`decksTable`)
+- `id`: integer (primary key, auto-generated)
+- `userId`: varchar(255) - Clerk user ID
+- `name`: varchar(255)
+- `description`: text
+- `createdAt`: timestamp
+- `updatedAt`: timestamp
+
+### Cards Table (`cardsTable`)
+- `id`: integer (primary key, auto-generated)
+- `deckId`: integer (foreign key to decksTable, cascade on delete)
+- `front`: text - question/prompt
+- `back`: text - answer
+- `createdAt`: timestamp
+- `updatedAt`: timestamp
+
+## Required Imports
+
+```typescript
+import { db } from '@/db/index';
+import { decksTable, cardsTable } from '@/db/schema';
+```
+
+For queries, import Drizzle query builders:
+```typescript
+import { eq, and, desc, asc } from 'drizzle-orm';
+```
+
+## Query Patterns
+
+### SELECT Queries
+
+```typescript
+// Get all records
+const allDecks = await db.select().from(decksTable);
+
+// Get with WHERE clause
+const userDecks = await db.select().from(decksTable).where(eq(decksTable.userId, userId));
+
+// Get with multiple conditions
+const result = await db.select()
+  .from(cardsTable)
+  .where(and(eq(cardsTable.deckId, deckId), eq(cardsTable.id, cardId)));
+
+// Get with ORDER BY
+const sortedDecks = await db.select()
+  .from(decksTable)
+  .where(eq(decksTable.userId, userId))
+  .orderBy(desc(decksTable.createdAt));
+```
+
+### INSERT Queries
+
+```typescript
+// Insert single record
+const newDeck = await db.insert(decksTable).values({
+  userId: userId,
+  name: "My Deck",
+  description: "Description here",
+}).returning();
+
+// Insert multiple records
+const newCards = await db.insert(cardsTable).values([
+  { deckId: 1, front: "Question 1", back: "Answer 1" },
+  { deckId: 1, front: "Question 2", back: "Answer 2" },
+]).returning();
+```
+
+### UPDATE Queries
+
+```typescript
+// Update records
+const updated = await db.update(decksTable)
+  .set({ 
+    name: "Updated Name",
+    updatedAt: new Date()
+  })
+  .where(eq(decksTable.id, deckId))
+  .returning();
+```
+
+### DELETE Queries
+
+```typescript
+// Delete records
+const deleted = await db.delete(cardsTable)
+  .where(eq(cardsTable.id, cardId))
+  .returning();
+```
+
+### JOIN Queries
+
+```typescript
+// Join tables
+const decksWithCards = await db.select()
+  .from(decksTable)
+  .leftJoin(cardsTable, eq(decksTable.id, cardsTable.deckId))
+  .where(eq(decksTable.userId, userId));
+```
+
+## Best Practices
+
+1. **Always use `.returning()`** when you need the inserted/updated/deleted data
+2. **Use proper operators**: `eq()`, `ne()`, `gt()`, `lt()`, `and()`, `or()`, `like()`, etc.
+3. **Handle timestamps**: Use `new Date()` for timestamp fields
+4. **Type safety**: Drizzle provides full TypeScript type inference
+5. **Error handling**: Wrap database queries in try-catch blocks
+6. **Transactions**: Use `db.transaction()` for multiple related operations
+
+## Security
+
+- Always validate user input before querying
+- Use Drizzle's parameterized queries (automatically handled)
+- Verify user ownership before modifying records (check `userId` field)
+- Never expose database errors directly to the client
+
+## Migration Commands
+
+```bash
+# Generate migrations
+npm run drizzle-kit generate
+
+# Run migrations
+npm run drizzle-kit migrate
+
+# Open Drizzle Studio
+npm run drizzle-kit studio
+```
+
+## Examples for This Project
+
+### Get all decks for a user
+```typescript
+const decks = await db.select()
+  .from(decksTable)
+  .where(eq(decksTable.userId, userId))
+  .orderBy(desc(decksTable.createdAt));
+```
+
+### Get all cards in a deck
+```typescript
+const cards = await db.select()
+  .from(cardsTable)
+  .where(eq(cardsTable.deckId, deckId))
+  .orderBy(asc(cardsTable.createdAt));
+```
+
+### Create a new deck with cards
+```typescript
+// Use a transaction for atomicity
+const result = await db.transaction(async (tx) => {
+  const [deck] = await tx.insert(decksTable).values({
+    userId: userId,
+    name: deckName,
+    description: deckDescription,
+  }).returning();
+  
+  const cards = await tx.insert(cardsTable).values(
+    cardsData.map(card => ({
+      deckId: deck.id,
+      front: card.front,
+      back: card.back,
+    }))
+  ).returning();
+  
+  return { deck, cards };
+});
+```
+
+## Forbidden Practices
+
+❌ **DO NOT** use raw SQL queries with template strings
+❌ **DO NOT** use `sql` tagged templates unless absolutely necessary
+❌ **DO NOT** bypass Drizzle schema definitions
+❌ **DO NOT** use other ORMs (Prisma, TypeORM, etc.) in this project
+❌ **DO NOT** directly use the Neon client for queries
+
+## When to Update Schema
+
+If you need to add/modify tables or columns:
+1. Update [src/db/schema.ts](mdc:src/db/schema.ts)
+2. Generate migration: `npm run drizzle-kit generate`
+3. Apply migration: `npm run drizzle-kit migrate`
+4. Update this rule if new patterns emerge
