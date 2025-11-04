@@ -14,6 +14,7 @@ export const cardsTable = pgTable("cards", {
   deckId: integer().notNull().references(() => decksTable.id, { onDelete: "cascade" }),
   front: text().notNull(), // The question or prompt (e.g., "Dog" or "When was the battle of hastings?")
   back: text().notNull(), // The answer (e.g., "Anjing" or "1066")
+  order: integer().notNull().default(0), // Order of the card in the deck
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });

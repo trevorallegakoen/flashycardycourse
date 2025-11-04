@@ -1,7 +1,6 @@
 ---
-alwaysApply: true
+alwaysApply: false
 ---
-
 # Clerk Authentication & Authorization Rules
 
 This project uses **Clerk** for authentication and authorization. All data access must be properly secured to ensure users can only access their own data.
@@ -32,8 +31,8 @@ export default async function MyPage() {
   const { userId } = await auth();
   
   if (!userId) {
-    // User is not authenticated
-    redirect('/sign-in');
+    // User is not authenticated - redirect to homepage where sign-in/sign-up buttons are
+    redirect('/');
   }
   
   // Use userId for data access

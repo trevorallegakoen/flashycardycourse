@@ -1,7 +1,16 @@
 import Link from "next/link";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
-export default function Home() {
+export default async function Home() {
+  // Redirect logged-in users to dashboard
+  const { userId } = await auth();
+  
+  if (userId) {
+    redirect('/dashboard');
+  }
   return (
     <div className="relative min-h-screen overflow-hidden">
       {/* Animated gradient background */}
@@ -33,9 +42,23 @@ export default function Home() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
               <SignedOut>
-                <p className="text-lg text-gray-300 bg-white/10 backdrop-blur-sm px-6 py-3 rounded-full border border-white/20">
-                  🚀 Sign in to access your personalized dashboard and start learning!
-                </p>
+                <SignInButton mode="modal" forceRedirectUrl="/dashboard">
+                  <Button 
+                    size="lg"
+                    className="px-8 py-6 text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-2xl hover:shadow-purple-500/50 hover:scale-105 transition-all duration-300"
+                  >
+                    Sign In
+                  </Button>
+                </SignInButton>
+                <SignUpButton mode="modal" forceRedirectUrl="/dashboard">
+                  <Button 
+                    size="lg"
+                    variant="outline"
+                    className="px-8 py-6 text-lg font-semibold border-2 border-white/30 text-white hover:bg-white/10 hover:text-white shadow-xl hover:scale-105 transition-all duration-300"
+                  >
+                    Sign Up
+                  </Button>
+                </SignUpButton>
               </SignedOut>
 
               <SignedIn>
