@@ -27,9 +27,10 @@ interface CardItemProps {
     back: string;
   };
   disabled?: boolean;
+  onSuccess?: () => void;
 }
 
-export const CardItem = memo(function CardItem({ card, disabled }: CardItemProps) {
+export const CardItem = memo(function CardItem({ card, disabled, onSuccess }: CardItemProps) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -74,6 +75,10 @@ export const CardItem = memo(function CardItem({ card, disabled }: CardItemProps
         alert(result.error || 'Failed to delete card');
       } else {
         setIsDeleteOpen(false);
+        // Call onSuccess callback to refresh parent component
+        if (onSuccess) {
+          onSuccess();
+        }
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to delete card');
@@ -190,6 +195,7 @@ export const CardItem = memo(function CardItem({ card, disabled }: CardItemProps
         card={card}
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
+        onSuccess={onSuccess}
       />
 
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

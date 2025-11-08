@@ -25,9 +25,10 @@ interface CardDialogProps {
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
-export function CardDialog({ deckId, card, open, onOpenChange }: CardDialogProps) {
+export function CardDialog({ deckId, card, open, onOpenChange, onSuccess }: CardDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [front, setFront] = useState(card?.front || '');
@@ -65,6 +66,10 @@ export function CardDialog({ deckId, card, open, onOpenChange }: CardDialogProps
         setFront('');
         setBack('');
         onOpenChange(false);
+        // Call onSuccess callback to refresh parent component
+        if (onSuccess) {
+          onSuccess();
+        }
       } else {
         setError(result.error || 'An error occurred');
       }

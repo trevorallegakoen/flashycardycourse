@@ -82,7 +82,7 @@ export async function getDeckWithCards(deckId: number, userId: string) {
 export async function insertDeck(data: {
   userId: string;
   name: string;
-  description: string;
+  description?: string | null;
 }) {
   const [newDeck] = await db.insert(decksTable)
     .values(data)
@@ -103,7 +103,7 @@ export async function updateDeckById(
   userId: string,
   data: {
     name?: string;
-    description?: string;
+    description?: string | null;
   }
 ) {
   const [updated] = await db.update(decksTable)

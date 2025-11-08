@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getUserDecksWithCardCounts } from "@/db/queries/deck-queries";
 import { DeckCard } from "@/components/deck-card";
+import { CreateDeckButton } from "@/components/create-deck-button";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -65,9 +66,7 @@ export default async function DashboardPage() {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold">Your Decks</h2>
-            <button className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg">
-              + Create New Deck
-            </button>
+            <CreateDeckButton />
           </div>
 
           {decks.length === 0 ? (

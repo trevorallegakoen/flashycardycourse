@@ -1,9 +1,20 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { BookOpen, Eye } from 'lucide-react';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from '@/components/ui/alert-dialog';
+import { BookOpen, Eye, Trash2 } from 'lucide-react';
+import { deleteDeck } from '@/app/actions/deck-actions';
 
 type DeckCardProps = {
   deck: {
@@ -17,6 +28,8 @@ type DeckCardProps = {
 
 export function DeckCard({ deck }: DeckCardProps) {
   const router = useRouter();
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleViewClick = () => {
     router.push(`/deck/${deck.id}`);
@@ -25,6 +38,25 @@ export function DeckCard({ deck }: DeckCardProps) {
   const handleStudyClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     router.push(`/deck/${deck.id}/study`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteDeck({ id: deck.id });
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to delete deck:', error);
+      alert('Failed to delete deck. Please try again.');
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteDialogOpen(false);
+    }
   };
 
   // Format date consistently for both server and client
@@ -82,7 +114,48 @@ export function DeckCard({ deck }: DeckCardProps) {
           <Eye className="w-3 h-3 mr-1" />
           View
         </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={handleDeleteClick}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent 
+          onClick={(e) => e.stopPropagation()}
+          className="sm:max-w-[500px] border-2 border-red-200 dark:border-red-900/50 shadow-2xl"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-2xl font-bold text-red-600 dark:text-red-400">
+              🗑️ Delete Deck?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base text-foreground/80">
+              This will permanently delete the deck <span className="font-semibold text-foreground">&quot;{deck.name}&quot;</span> and all <span className="font-semibold text-foreground">{deck.cardCount} card{deck.cardCount !== 1 ? 's' : ''}</span> inside it. 
+              <br />
+              <br />
+              <span className="font-semibold text-red-600 dark:text-red-400">⚠️ This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 pt-2">
+            <AlertDialogCancel 
+              disabled={isDeleting}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold shadow-lg hover:shadow-xl ring-2 ring-red-400/50 hover:ring-red-500/70 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? '🗑️ Deleting...' : '🗑️ Delete Forever'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

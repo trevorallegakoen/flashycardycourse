@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Pencil, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -48,11 +49,17 @@ interface DeckPageClientProps {
 }
 
 export function DeckPageClient({ deckWithCards }: DeckPageClientProps) {
+  const router = useRouter();
   const [isAddCardOpen, setIsAddCardOpen] = useState(false);
   const [isEditDeckOpen, setIsEditDeckOpen] = useState(false);
   const [cards, setCards] = useState(deckWithCards.cards);
   const [isReordering, setIsReordering] = useState(false);
   const [activeId, setActiveId] = useState<number | null>(null);
+
+  // Update local cards state when server data changes
+  useEffect(() => {
+    setCards(deckWithCards.cards);
+  }, [deckWithCards.cards]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -117,6 +124,11 @@ export function DeckPageClient({ deckWithCards }: DeckPageClientProps) {
 
   function handleDragCancel() {
     setActiveId(null);
+  }
+
+  function handleCardSuccess() {
+    // Refresh the server component data to get the latest cards
+    router.refresh();
   }
 
   const activeCard = activeId ? cards.find((card) => card.id === activeId) : null;
@@ -228,7 +240,12 @@ export function DeckPageClient({ deckWithCards }: DeckPageClientProps) {
               >
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {cards.map((card) => (
-                    <CardItem key={card.id} card={card} disabled={isReordering} />
+                    <CardItem 
+                      key={card.id} 
+                      card={card} 
+                      disabled={isReordering} 
+                      onSuccess={handleCardSuccess}
+                    />
                   ))}
                 </div>
               </SortableContext>
@@ -248,6 +265,7 @@ export function DeckPageClient({ deckWithCards }: DeckPageClientProps) {
         deckId={deckWithCards.id}
         open={isAddCardOpen}
         onOpenChange={setIsAddCardOpen}
+        onSuccess={handleCardSuccess}
       />
 
       <EditDeckDialog
